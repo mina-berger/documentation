@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import org.openqa.selenium.WebElement;
 
 /**
@@ -62,7 +63,6 @@ public class WiktionaryEnDriver extends DocDriver {
     mapNature.put("Interjection", Nature.INTERJ);
     mapNature.put("Numeral", Nature.NUM);
     mapNature.put("Contraction", Nature.CONTR);
-    
 
   }
 
@@ -74,7 +74,7 @@ public class WiktionaryEnDriver extends DocDriver {
   PrintStream out;
   //WiktionaryFrDriver wfrDriver;
 
-  public WiktionaryEnDriver(Lang langS)  {
+  public WiktionaryEnDriver(Lang langS) {
     //writer = new DocWriter(out);
     this.out = System.out;//new PrintStream("doc/log");
     this.langS = langS;
@@ -91,6 +91,10 @@ public class WiktionaryEnDriver extends DocDriver {
       case ES:
         mark = "Spanish";
         att = "es";
+        break;
+      case IT:
+        mark = "Italian";
+        att = "it";
         break;
       case ON:
         mark = "Old Norse";
@@ -110,7 +114,7 @@ public class WiktionaryEnDriver extends DocDriver {
     super.quit();
   }
 
-  public boolean updateMp(MotPrincipal mp){
+  public boolean updateMp(MotPrincipal mp) {
     open("https://en.m.wiktionary.org/wiki/" + mp.getClef());
     String contentPath = contentPath();
     if (contentPath == null) {
@@ -145,7 +149,7 @@ public class WiktionaryEnDriver extends DocDriver {
       //title
       String motPath = subPath(xpath, i + 1) + "/*[name()='strong' or name()='span' or name()='b']";
       WebElement mot = element(motPath);
-      if(mot == null){
+      if (mot == null) {
         System.out.println("[e] cannot get mot : " + motPath);
       }
       if (!mot.getText().equals(mp.getMot())) {
@@ -163,6 +167,7 @@ public class WiktionaryEnDriver extends DocDriver {
         System.err.println("no ol tag");
         continue;
       }
+
       if (!ol.getTagName().equals("ol")) {
         System.err.println("unexpected tag:" + ol.getTagName());
         continue;
@@ -189,11 +194,13 @@ public class WiktionaryEnDriver extends DocDriver {
         continue;
       }
       String title = headline.getText();
+      //System.out.println("title=" + title);
       if (!title.equals(mark)) {
         continue;
       }
       String contentPath = subPath(xpath, i + 1);
       WebElement content = element(contentPath);
+      //System.out.println("content=" + content);
       if (content == null) {
         System.err.println("cannot find");
         continue;
@@ -203,9 +210,28 @@ public class WiktionaryEnDriver extends DocDriver {
     return null;
   }
 
-  public ArrayList<MotGeneral> getMgList(String clef, MotPrincipal chercher, ArrayList<MotPrincipal> mpList){
+  public MotPrincipal getMp(WebElement element, MotPrincipal chercher) {
+    String tagName = element.getTagName();
+    if (tagName.equals("h4") || tagName.equals("h3")) {
+      String h4 = element.getText();
+      if (mapNature.containsKey(h4)) {
+        Nature nature = mapNature.get(h4);
+        if (chercher == null || nature.equals(chercher.getNature())) {
+          return new MotPrincipal(mapNature.get(h4));
+        }
+        return null;
+      }
+      if (!skipH4.contains(h4)) {
+        out.println("[e] unknown title='" + h4 + "'");
+      }
+    }
+    return null;
+  }
+
+  public ArrayList<MotGeneral> getMgList(String clef, MotPrincipal chercher, ArrayList<MotPrincipal> mpList) {
     open("https://en.m.wiktionary.org/wiki/" + clef);
     String contentPath = contentPath();
+    //System.out.println("contentPath=" + contentPath);
     if (contentPath == null) {
       return new ArrayList<>();
     }
@@ -213,118 +239,134 @@ public class WiktionaryEnDriver extends DocDriver {
     String xpath = contentPath + "/*";
     List<WebElement> elements = elements(xpath);
     MotPrincipal mp = null;
+    loop_i:
     for (int i = 0; i < elements.size(); i++) {
       WebElement element = elements.get(i);
       String tagName = element.getTagName();
-      if (tagName.equals("h4") || tagName.equals("h3")) {
-        String h4 = element.getText();
-        if (mapNature.containsKey(h4)) {
-          Nature nature = mapNature.get(h4);
-          if(chercher == null || nature.equals(chercher.getNature())){
-           mp = new MotPrincipal(mapNature.get(h4));
-          }
-          continue;
-        }
-        if (!skipH4.contains(h4)) {
-          out.println("[e] unknown title='" + h4 + "'");
-        }
+      MotPrincipal temp1_mp = getMp(element, chercher);
+      MotPrincipal temp2_mp = getMp(element, null);
+
+      //System.out.println("element=" + element + ":temp1=" + (temp1_mp !=null));
+      if (temp1_mp != null) {
+        mp = temp2_mp;
+        continue;
+      } else if(temp2_mp != null) {
+        mp = null;
         continue;
       } else if (mp == null) {
         continue;
       }
-      if (tagName.equals("p") && mp != null) {
-        //boolean isRoot = count(subPath(xpath, i) + "/*") > 1;
-        String olPath = subPath(xpath, i + 1);
-        boolean isRoot = 
-          count(olPath + "/li[1]/span/span[@class='form-of-definition-link']/i/a") == 0 &&
-          count(olPath + "/li[1]/span[@class='use-with-mention']/i/a") == 0;
-        WebElement ol = element(olPath);
-        if (ol == null) {
-          System.err.println("no ol tag");
-          continue;
-        }
-        if (!ol.getTagName().equals("ol")) {
-          System.err.println("unexpected tag:" + ol.getTagName());
-          continue;
-        }
-        WebElement mot = element(subPath(xpath, i) + "/strong[@lang='" + att + "']");
-        if (mot == null) {
-          mot = element(subPath(xpath, i) + "/b");
-        }
-        if(chercher != null && !mot.getText().equals(chercher.getMot())){
-          continue;
-        }
-        //Nature.PART => add Nature.Verb && Mode.PART
-        MotGeneral mgPart = null;
-        if (mp.getNature() == Nature.PART) {
-          int index = i;
-          while (index >= 0) {
-            WebElement ety = elements.get(index);
-            if (!ety.getTagName().equals("h3")) {
-              index--;
-              continue;
-            }
-            ety = element(subPath(xpath, index) + "/span[@id='Etymology']");
-            if (ety == null) {
-              index--;
-              continue;
-            }
-            ety = element(subPath(xpath, index + 1) + "/i/a");
-            if (ety == null) {
-              break;
-            }
-            String _mot = ety.getText();
-            String _clef = ety.getAttribute("title");
-            if (_mot == null || _clef == null) {
-              out.println("PART=>VERB failing:mot=" + _mot + "/clef=" + _clef);
-              break;
-            }
-            String categories = elements.get(index + 1).getText().toLowerCase();
-            int ofindex = categories.indexOf("of");
-            if(ofindex >= 0){
-              categories = categories.substring(0, ofindex);
-            }
-            //mp.setRoot(_mot);
-            MotPrincipal _mp = new MotPrincipal(Nature.VERBE);
-            //partCategories = categories.split(" ");
-            _mp.setMot(_mot);
-            _mp.setClef(_clef);
-            mgPart = new MotGeneral(_mot, _mp);
-            //for(String category:categories.split(" ")){
-            //  updateCategory(mgPart, category);
-            //}
-            break;
-
-          }
-        }
-        if(chercher == null){
-          if (isRoot) {
-            mp.setMot(mot.getText());
-            mp.setClef(clef);
-
-            list.add(new MotGeneral(mot.getText(), mp, true));
-            updateRoot(subPath(xpath, i), mp);
-            //if (langT == Lang.EN) {
-              mp.setSens(getSens(olPath));
-            //} else {
-              mpList.add(mp);
-            //}
-          } else {
-            if (mot == null) {
-              System.err.println("no mot general!!");
-            } else {
-              ArrayList<MotGeneral> mgList = getMotGeneralList(olPath, mot.getText(), mp);
-              list.addAll(mgList);
-            }
-            mpList.add(mp);
-          }
-        }
-        if(mgPart != null){
-          list.add(mgPart);
-          mpList.add(mgPart.getPrincipal());
-        }
-        mp = null;
+      
+      if (!tagName.equals("p")) {
+        continue;
       }
+      //boolean isRoot = count(subPath(xpath, i) + "/*") > 1;
+      String olPath = subPath(xpath, i + 1);
+      boolean isRoot
+        = count(olPath + "/li[1]/span/span[@class='form-of-definition-link']/i/a") == 0
+        && count(olPath + "/li[1]/span[@class='use-with-mention']/i/a") == 0;
+      WebElement ol = element(olPath);
+      if (ol == null) {
+        System.err.println("no ol tag");
+        continue;
+      }
+             //ad hoc logic
+      /*System.err.println(ol.getTagName());
+      System.err.println(ol.getAttribute("class"));
+      if (ol.getTagName().equals("div") && ol.getAttribute("class").contains("maintenance")){
+        olPath = subPath(xpath, i + 3);
+        ol = element(olPath);
+        isRoot
+        = count(subPath(xpath, i + 2) + "/li[1]/span/span[@class='form-of-definition-link']/i/a") == 0
+        && count(subPath(xpath, i + 2) + "/li[1]/span[@class='use-with-mention']/i/a") == 0;
+      }*/
+     
+      if (!ol.getTagName().equals("ol")) {
+        System.err.println("unexpected tag:" + ol.getTagName());
+        continue;
+      }
+      WebElement mot = element(subPath(xpath, i) + "/strong[@lang='" + att + "']");
+      if (mot == null) {
+        mot = element(subPath(xpath, i) + "/b");
+      }
+      if (chercher != null && !mot.getText().equals(chercher.getMot())) {
+        continue;
+      }
+      //Nature.PART => add Nature.Verb && Mode.PART
+      MotGeneral mgSub = null;
+      if (mp.getNature() == Nature.PART) {
+        int index = i;
+        while (index >= 0) {
+          WebElement ety = elements.get(index);
+          if (!ety.getTagName().equals("h3")) {
+            index--;
+            continue;
+          }
+          ety = element(subPath(xpath, index) + "/span[@id='Etymology']");
+          if (ety == null) {
+            index--;
+            continue;
+          }
+          ety = element(subPath(xpath, index + 1) + "/i/a");
+          if (ety == null) {
+            break;
+          }
+          String _mot = ety.getText();
+          String _clef = ety.getAttribute("title");
+          if (_mot == null || _clef == null) {
+            out.println("PART=>VERB failing:mot=" + _mot + "/clef=" + _clef);
+            break;
+          }
+          //String categories = elements.get(index + 1).getText().toLowerCase();
+          //int ofindex = categories.indexOf("of");
+          //if (ofindex >= 0) {
+          //  categories = categories.substring(0, ofindex);
+          //}
+          //mp.setRoot(_mot);
+          MotPrincipal _mp = new MotPrincipal(Nature.VERBE);
+          //partCategories = categories.split(" ");
+          //System.out.println(_mot + ":" + _clef);
+          _mp.setMot(_mot);
+          _mp.setClef(_clef);
+          mgSub = new MotGeneral(_mot, _mp);
+          //for(String category:categories.split(" ")){
+          //  updateCategory(mgPart, category);
+          //}
+          break;
+
+        }
+      }else if(count(subPath(xpath, i, "/b/a")) > 0){
+        System.out.println("found:" + text(subPath(xpath, i, "/b/a")));
+      }
+      //System.out.println(count(subPath(xpath, i, "/b/a")));
+      //if (chercher == null) {
+        if (isRoot) {
+          mp.setMot(mot.getText());
+          mp.setClef(clef);
+
+          list.add(new MotGeneral(mot.getText(), mp, true));
+          updateRoot(subPath(xpath, i), mp);
+          //if (langT == Lang.EN) {
+          mp.setSens(getSens(olPath));
+          //} else {
+          mpList.add(mp);
+          //}
+        } else {
+          if (mot == null) {
+            System.err.println("no mot general!!");
+          } else {
+            //System.out.println(mot);
+            ArrayList<MotGeneral> mgList = getMotGeneralList(olPath, mot.getText(), mp);
+            list.addAll(mgList);
+          }
+          mpList.add(mp);
+        }
+      //}
+      if (mgSub != null) {
+        list.add(mgSub);
+        mpList.add(mgSub.getPrincipal());
+      }
+      //mp = null;
 
     }
 
@@ -344,7 +386,7 @@ public class WiktionaryEnDriver extends DocDriver {
         } else if (i < elements.size() - 1) {
           //System.out.println("addVaridation 1");
           WebElement varidation = elements.get(i + 1);
-          if(!varidation.getTagName().equals("i")){
+          if (!varidation.getTagName().equals("i")) {
             mp.addVariation(varidation.getText().trim());
             i++;
           }
@@ -372,6 +414,8 @@ public class WiktionaryEnDriver extends DocDriver {
             mp.setGendre(Gendre.F);
           } else if (value.equals("n pl") || value.equals("n sg")) {
             mp.setGendre(Gendre.N);
+          } else if (value.equals("m pl, f pl")) {
+            mp.setGendre(Gendre.MF);
           } else {
             out.println("[e] unknown gender:" + value);
           }
@@ -385,6 +429,10 @@ public class WiktionaryEnDriver extends DocDriver {
             mp.addAutre(Autre.REL);
           } else if (value.equals("demonstrative")) {
             mp.addAutre(Autre.DEMONST);
+          } else if (value.equals("medial demonstrative adjective and pronoun")) {
+            mp.addAutre(Autre.DEMONST);
+          } else if (value.equals("Epic, Attic, Ionic, Thessalian, Koine Greek")) {
+            //
           } else {
             out.println("[e] unknown ib-content:" + value);
           }
@@ -394,7 +442,7 @@ public class WiktionaryEnDriver extends DocDriver {
           } else {
             out.println("[e] unknown ib-content qualifier-content:" + value);
           }
-          
+
         } else if (skipRootType.contains(type)) {
 
         } else {
@@ -448,12 +496,12 @@ public class WiktionaryEnDriver extends DocDriver {
     MotGeneral mg = new MotGeneral(mot, mp);
     String str = text(liPath + "/span[@class='form-of-definition']");
     String tail;
-    if(str == null){
+    if (str == null) {
       str = text(liPath + "/span[@class='use-with-mention']");
       //int countIA = count(liPath + "/span[@class='use-with-mention']/i/a");
       //System.out.println("count=" + countIA);
       tail = lastText(liPath + "/span[@class='use-with-mention']/i/a");
-    }else{
+    } else {
       tail = text(liPath + "/span[@class='form-of-definition']/span[@class='form-of-definition-link']");
     }
     if (str == null || tail == null) {
@@ -466,10 +514,10 @@ public class WiktionaryEnDriver extends DocDriver {
       str = str.substring(0, str.length() - 2).trim();
     }
     str = str.replaceAll("\\(.*\\)", "");
-    
+
     boolean foundPart = false;
     for (String category : str.split(" ")) {
-      if(updateCategory(mg, category).equals(Mode.PART)){
+      if (Objects.equals(updateCategory(mg, category), Mode.PART)) {
         foundPart = true;
       }
     }
@@ -485,7 +533,7 @@ public class WiktionaryEnDriver extends DocDriver {
     //Nature.PART => add Nature.Verb && Mode.PART
     if (mp.getNature() == Nature.PART) {
       mp.setFindRoot(true);
-      if(foundPart){
+      if (foundPart) {
         mp.setNature(VERBE);
       }
     }
@@ -495,6 +543,7 @@ public class WiktionaryEnDriver extends DocDriver {
 
   Categorie updateCategory(MotGeneral mg, String category) {
     category = wash(category).toLowerCase();
+    //System.out.println(category);
     if (category.equals("first-person")) {
       mg.setPersonne(Personne.PREM);
       return mg.getPersonne();
@@ -517,10 +566,10 @@ public class WiktionaryEnDriver extends DocDriver {
       mg.setTemps(Temps.IMPF);
       return mg.getTemps();
     } else if (category.equals("future")) {
-      mg.setTemps(Temps.FUT);
+      mg.setTemps(mg.getTemps() == Temps.PARF?Temps.FUTANT:Temps.FUT);
       return mg.getTemps();
     } else if (category.equals("perfect")) {
-      mg.setTemps(Temps.PARF);
+      mg.setTemps(mg.getTemps() == Temps.FUT?Temps.FUTANT:Temps.PARF);
       return mg.getTemps();
     } else if (category.equals("pluperfect")) {
       mg.setTemps(Temps.PQPF);
@@ -632,7 +681,6 @@ public class WiktionaryEnDriver extends DocDriver {
     //}
     driver.quit();
   }*/
-
 }
 /*
   function findXPath(xpath){
@@ -642,4 +690,4 @@ public class WiktionaryEnDriver extends DocDriver {
     }
     return tags.snapshotItem(0);
   }
-*/
+ */

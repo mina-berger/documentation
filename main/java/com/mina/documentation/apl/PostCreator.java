@@ -1,9 +1,11 @@
 package com.mina.documentation.apl;
 
 import static com.mina.documentation.DocUtil.wash;
+import static com.mina.documentation.DocUtil.washBy;
 import com.mina.documentation.DocWriter;
 import static com.mina.documentation.linguistique.Autre.INDECL;
 import com.mina.documentation.linguistique.Categorie;
+import com.mina.documentation.linguistique.Lang;
 import static com.mina.documentation.linguistique.Mode.IND;
 import com.mina.documentation.linguistique.MotGeneral;
 import com.mina.documentation.linguistique.MotPrincipal;
@@ -32,7 +34,9 @@ public abstract class PostCreator {
   DocWriter out;
   ReserveGeneral rg;
   ReservePrincipal rp;
-  public PostCreator(File src, PrintStream ps){
+  Lang lang;
+  public PostCreator(Lang lang, File src, PrintStream ps){
+    this.lang = lang;
     this.src = src;
     this.out = new DocWriter(ps);
     rg = new ReserveGeneral();
@@ -83,8 +87,7 @@ public abstract class PostCreator {
     ArrayList<MotGeneral> list = new ArrayList<>();
     ArrayList<String> lost = new ArrayList<>();
     for (String word : words) {
-      word = wash(word).toLowerCase();
-      //word = washBy(langS, word);
+      word = washBy(lang, wash(word)).toLowerCase();
       if (word.isEmpty()) {
         continue;
       }

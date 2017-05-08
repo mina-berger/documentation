@@ -22,7 +22,7 @@ public class PostCreatorEs extends PostCreator {
   WiktionaryEnDriver wed;
   WiktionaryFrDriver wfd;
   public PostCreatorEs(File src, PrintStream ps) {
-    super(src, ps);
+    super(Lang.ES, src, ps);
     wed = new WiktionaryEnDriver(Lang.ES);
     wfd = new WiktionaryFrDriver(Lang.ES);
   }

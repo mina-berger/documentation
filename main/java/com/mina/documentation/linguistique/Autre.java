@@ -10,7 +10,7 @@ public enum Autre implements Categorie{
   IONIC("ionic"), HOMERIC("homeric"), PROCL("procl."), ENCL("encl."),
   UNAUG("unaug."), NUMOUV("nu-mouv."), APOCOPIC("apocopic"), DEMONST("demonst."),
   ADVERBIAL("adverbial"), INFORMAL("informal"), FORMAL("formal"), ALT("alt."),
-  FAUTES("fautes"), POSTP("postp."), MEDIEVAL("Médiéval");
+  FAUTES("fautes"), POSTP("postp."), MEDIEVAL("Médiéval"), IMPERS("impers.");
 
   String abbr;
   Autre(String abbr){

@@ -24,6 +24,7 @@ public class WiktionaryFrDriver extends DocDriver {
     langAtt.put(Lang.LA, "Latin");
     langAtt.put(Lang.GR, "Grec_ancien");
     langAtt.put(Lang.ES, "Espagnol");
+    langAtt.put(Lang.IT, "Italien");
   }
   Lang lang;
   public WiktionaryFrDriver(Lang lang){

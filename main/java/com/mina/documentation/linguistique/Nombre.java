@@ -5,7 +5,7 @@ package com.mina.documentation.linguistique;
  * @author minaberger
  */
 public enum Nombre implements Categorie {
-  SG("sg."), PL("pl.");
+  SG("sg."), PL("pl."), DU("du.");
 
   String abbr;
   Nombre(String abbr){

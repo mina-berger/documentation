@@ -22,15 +22,21 @@ public class MotPrincipal {
   ArrayList<Autre> autres;
 
   public MotPrincipal(Nature nature) {
-    this(nature, null, null);
+    this(nature, null, null, null);
   }
 
   public MotPrincipal(Nature nature, String mot, String sens, String... variations) {
+    this(nature, null, mot, sens, variations);
+  }
+  public MotPrincipal(Gendre gendre, String mot, String sens, String... variations) {
+    this(Nature.NOUN, gendre, mot, sens, variations);
+  }
+  public MotPrincipal(Nature nature, Gendre gendre, String mot, String sens, String... variations) {
     this.nature = nature;
-    gendre = null;
+    this.gendre = gendre;
     conjugaison = null;
     findRoot = false;
-    this.variations = new ArrayList<>(Arrays.asList(variations));
+    this.variations = variations == null?new ArrayList<>():new ArrayList<>(Arrays.asList(variations));
     autres = new ArrayList<>();
     this.mot = mot;
     this.sens = sens;
@@ -51,7 +57,9 @@ public class MotPrincipal {
   }
   
   public void addVariation(String variation) {
-    //System.out.println("DEBUG variation=" + variation);
+    if(variations.contains(variation)){
+      return;
+    }
     variations.add(variation);
   }
 

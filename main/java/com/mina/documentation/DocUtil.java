@@ -166,6 +166,13 @@ public class DocUtil {
       if(str.startsWith("δ’")){
         str = str.substring(2).trim();
       }
+      str = str.replaceAll("ὰ", "ά").replaceAll("ἂ", "ἄ").replaceAll("ἃ", "ἄ")
+            .replaceAll("ὲ", "έ").replaceAll("ἒ", "ἔ").replaceAll("ἓ", "ἕ")
+            .replaceAll("ὴ", "ή").replaceAll("ἢ", "ἤ").replaceAll("ἣ", "ἥ")
+            .replaceAll("ὶ", "ί").replaceAll("ἲ", "ἴ").replaceAll("ἳ", "ἵ")
+            .replaceAll("ὼ", "ώ").replaceAll("ὢ", "ὤ").replaceAll("ὣ", "ὥ")
+            .replaceAll("ὺ", "ύ").replaceAll("ὒ", "ὔ").replaceAll("ὓ", "ὕ");
+
     }
     return str;
     
@@ -190,7 +197,8 @@ public class DocUtil {
     }
     while(str.endsWith("\"") || str.endsWith(".") || str.endsWith(",") || str.endsWith("?") || 
        str.endsWith("!") || str.endsWith(";") || str.endsWith(":") || str.endsWith("-") ||
-       str.endsWith(")") || str.endsWith("]") || str.endsWith("'") || str.endsWith("…")){
+       str.endsWith(")") || str.endsWith("]") || str.endsWith("'") || str.endsWith("…") ||
+       str.endsWith("᾽") || str.endsWith("·")){
       str = str.substring(0, str.length() - 1).trim();
     }
     return str;

@@ -10,7 +10,6 @@ import static com.mina.documentation.DocUtil.toBetacode;
 import com.mina.documentation.DocWriter;
 import com.mina.documentation.linguistique.Autre;
 import com.mina.documentation.linguistique.Cas;
-import com.mina.documentation.linguistique.Categorie;
 import com.mina.documentation.linguistique.Gendre;
 import com.mina.documentation.linguistique.Lang;
 import com.mina.documentation.linguistique.Mode;
@@ -31,7 +30,12 @@ import java.util.List;
  * @author minaberger
  */
 public class PerseusDriver extends DocDriver {
-  static List<Categorie> skipCategories = Arrays.asList();
+  private static List<String> skipCategories = Arrays.asList(
+    "nu_movable", "indeclform", "attic", "doric", "aeolic", "ionic", "poetic",
+    "epic", "contr", "proclitic", "enclitic", "homeric", "unaugmented", "iota_intens",
+    "redupl", "comp_only", "short_subj"
+    
+  );
   Lang lang;
   String name;
   public PerseusDriver(Lang lang){
@@ -102,6 +106,7 @@ public class PerseusDriver extends DocDriver {
     return mgList;
   }
   void update(MotGeneral mg, String category){
+    //System.out.println(category);
     if (category.equals("1st")) {
       mg.setPersonne(Personne.PREM);
     } else if (category.equals("2nd")) {
@@ -110,6 +115,8 @@ public class PerseusDriver extends DocDriver {
       mg.setPersonne(Personne.TROI);
     } else if (category.equals("sg")) {
       mg.setNombre(Nombre.SG);
+    } else if (category.equals("dual")) {
+      mg.setNombre(Nombre.DU);
     } else if (category.equals("pl")) {
       mg.setNombre(Nombre.PL);
     } else if (category.equals("pres")) {
@@ -120,6 +127,10 @@ public class PerseusDriver extends DocDriver {
       mg.setTemps(Temps.FUT);
     } else if (category.equals("perf")) {
       mg.setTemps(Temps.PARF);
+    } else if (category.equals("plup")) {
+      mg.setTemps(Temps.PQPF);
+    } else if (category.equals("futperf")) {
+      mg.setTemps(Temps.FUTANT);
     } else if (category.equals("aor")) {
       mg.setTemps(Temps.AOR);
     } else if (category.equals("act")) {
@@ -134,6 +145,8 @@ public class PerseusDriver extends DocDriver {
       mg.setMode(Mode.IND);
     } else if (category.equals("subj")) {
       mg.setMode(Mode.SUBJ);
+    } else if (category.equals("opt")) {
+      mg.setMode(Mode.OPT);
     } else if (category.equals("imperat")) {
       mg.setMode(Mode.IMPER);
     } else if (category.equals("inf")) {
@@ -154,32 +167,10 @@ public class PerseusDriver extends DocDriver {
       mg.setGendre(Gendre.F);
     } else if (category.equals("neut")) {
       mg.setGendre(Gendre.N);
-    } else if (category.equals("nu_movable")) {
-      mg.addAutre(Autre.NUMOUV);
-    } else if (category.equals("indeclform")) {
-      mg.getPrincipal().addAutre(Autre.INDECL);
-    } else if (category.equals("attic")) {
-      mg.getPrincipal().addAutre(Autre.ATTIC);
-    } else if (category.equals("doric")) {
-      mg.getPrincipal().addAutre(Autre.DORIC);
-    } else if (category.equals("aeolic")) {
-      mg.getPrincipal().addAutre(Autre.AEOLIC);
-    } else if (category.equals("ionic")) {
-      mg.getPrincipal().addAutre(Autre.IONIC);
-    } else if (category.equals("poetic")) {
-      mg.getPrincipal().addAutre(Autre.POET);
-    } else if (category.equals("epic")) {
-      mg.getPrincipal().addAutre(Autre.EPIC);
-    } else if (category.equals("contr")) {
-      mg.getPrincipal().addAutre(Autre.CONTR);
-    } else if (category.equals("proclitic")) {
-      mg.getPrincipal().addAutre(Autre.PROCL);
-    } else if (category.equals("enclitic")) {
-      mg.getPrincipal().addAutre(Autre.ENCL);
-    } else if (category.equals("homeric")) {
-      mg.getPrincipal().addAutre(Autre.PROCL);
-    } else if (category.equals("unaugmented")) {
-      mg.getPrincipal().addAutre(Autre.UNAUG);
+    } else if (category.equals("impersonal")) {
+      mg.getPrincipal().addAutre(Autre.IMPERS);
+    } else if(skipCategories.contains(category)){
+      // faire rien
     } else{
       System.out.println("[p] unknown category:" + category);
     }
@@ -210,6 +201,10 @@ public class PerseusDriver extends DocDriver {
     }else if(str.equals("exclam")){
       return Nature.INTERJ;
       //exclam
+    }else if(str.equals("irreg")){
+      //ad hoc
+      //http://www.perseus.tufts.edu/hopper/morph?l=ti/s&la=greek
+      return Nature.PRON;
     }else{
       System.out.println("[p]unknown nature:" + str);
     }
